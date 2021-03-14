@@ -1,5 +1,9 @@
 package orders.matching.processing
 
+import orders.matching.processing.BalancesUpdater.updateBalances
+import orders.matching.processing.OrdersMatcher.matchOrders
+import orders.matching.processing.OrdersValidator.validate
+
 import scala.annotation.tailrec
 
 object OrdersProcessor {
@@ -8,26 +12,25 @@ object OrdersProcessor {
     state: State,
     newOrder: Order
   ): OrderProcessingResult = { //TODO: use lenses
-    val assetId = newOrder.assetId
+    if (!validate(newOrder, state.balances)) {
+      InvalidOrder
+    } else {
+      val assetId = newOrder.assetId
+      state.activeOrders.getOrElse(assetId, Nil) match {
+        case Nil =>
+          val newState = state.copy(
+            activeOrders = state.activeOrders.updated(assetId, List(newOrder))
+          )
+          Success(newState)
 
-    state.activeOrders.getOrElse(assetId, Nil) match {
-      case Nil =>
-        val newState = state.copy(
-          activeOrders = state.activeOrders.updated(assetId, List(newOrder))
-        )
-        Success(newState)
-
-      case orderList =>
-        val updatedOrderList = orderList.foldLeft(List[Order]()){(current, next) =>
-          next match {
-            case Order(client, newOrder.orderType.complement, assetId, price, amount) => current
-            case _ => current.appended(next)
-          }
-        }
-        val newState = state.copy(
-          activeOrders = state.activeOrders.updated(assetId, updatedOrderList)
-        )
-        Success(newState)
+        case orderList =>
+          val (updatedOrderList, updatedBalances) = matchOrderList(orderList, newOrder, state.balances)
+          val newState = state.copy(
+            balances = updatedBalances,
+            activeOrders = state.activeOrders.updated(assetId, updatedOrderList)
+          )
+          Success(newState)
+      }
     }
   }
 
@@ -40,26 +43,35 @@ object OrdersProcessor {
 
     case Nil => (updatedList :+ order, balances)
 
+    case currentOrder :: tail if !validate(currentOrder, balances) =>
+      matchOrderList(tail, order, balances, updatedList)
+
     case currentOrder :: tail =>
-      matchOrders(currentOrder, order, balances) match {
-        case SameClientMatch => {
+      matchOrders(currentOrder, order) match {
+        case FullMatch(price) =>
+          val updatedBalances = updateBalances(
+            balances,
+            Seq(currentOrder.copy(price = price), order.copy(price = price))
+          )
 
-        }
-        case FullMatch => {
+          (updatedList ++ tail, updatedBalances)
+        case PartialMatch(price, amount) =>
+          val updatedBalances = updateBalances(
+            balances,
+            Seq(currentOrder.copy(price = price, amount = amount), order.copy(price = price, amount = amount))
+          )
+          val leftOver = if (order.amount > amount) {
+            order.copy(amount = order.amount - amount)
+          } else if (currentOrder.amount > amount) {
+            currentOrder.copy(amount = currentOrder.amount - amount)
+          } else {
+            throw new RuntimeException("Partial matching is not fully implemented")
+          }
 
-        }
-
-        case PartialMatch =>{
-
-        }
-
-        case NoMatch => matchOrderList(tail, order, balances, updatedList :+ currentOrder)
+          ((updatedList :+ leftOver) ++ tail, updatedBalances)
+        case SameClientMatch | NoMatch =>
+          matchOrderList(tail, order, balances, updatedList :+ currentOrder)
       }
-  }
-
-
-  def matchOrders(order: Order, newOrder: Order, balances: Balances): OrderMatch = {
-
   }
 
   def processAll(
@@ -69,6 +81,7 @@ object OrdersProcessor {
     orders.foldLeft(state) { (currentState, order) =>
       process(currentState, order) match {
         case Success(newState) => newState
+        case InvalidOrder => currentState
         case Failure => throw new RuntimeException(s"Order $order processing failed with unknown reason")
       }
     }

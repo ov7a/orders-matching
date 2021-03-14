@@ -1,6 +1,6 @@
 package orders.matching.io
 
-import orders.matching.processing.{AssetId, BuyOrderType, Order, OrderType, SellOrderType}
+import orders.matching.processing.{BuyOrderType, Order, SellOrderType}
 
 object OrdersParser {
   def parseOrder(line: String): Option[Order] = {
@@ -25,7 +25,7 @@ object OrdersParser {
     ))
   }
 
-  def parse(ordersFileName: String): Iterator[Order] = {
+  def parse[R](ordersFileName: String): (Iterator[Order] => R) => R = {
     Parser
       .parseLines(ordersFileName, parseOrder)
   }

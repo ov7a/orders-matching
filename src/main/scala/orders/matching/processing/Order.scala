@@ -4,7 +4,7 @@ case class Order(
   clientId: ClientId,
   orderType: OrderType,
   assetId: AssetId,
-  price: Int,
+  price: Currency,
   amount: Int
 )
 

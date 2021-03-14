@@ -1,6 +1,6 @@
 package orders.matching
 
-import orders.matching.io.{BalancesParser, OrdersParser, Parser, BalancesWriter}
+import orders.matching.io.{BalancesParser, BalancesWriter, OrdersParser}
 import orders.matching.processing._
 
 object Main {
@@ -21,11 +21,11 @@ object Main {
       }
 
     val balances = BalancesParser.parse(clientsFileName)
-    val orders = OrdersParser.parse(ordersFileName)
+    val ordersTransformer = OrdersParser.parse[State](ordersFileName)
 
     val initialState = State(balances)
 
-    val newState = OrdersProcessor.processAll(initialState, orders)
+    val newState = ordersTransformer.apply(OrdersProcessor.processAll(initialState, _))
 
     BalancesWriter.writeResult(newState.balances, resultFileName)
   }

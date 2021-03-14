@@ -1,6 +1,6 @@
 package orders.matching.processing
 
 case class BalanceState(
-  balance: Int,
+  balance: Currency,
   assets: Map[AssetId, Int]
 )

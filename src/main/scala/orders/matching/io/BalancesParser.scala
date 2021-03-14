@@ -22,8 +22,7 @@ object BalancesParser {
 
   def parse(clientsFileName: String): Balances = {
     Parser
-      .parseLines(clientsFileName, parseClientBalance)
-      .toMap
+      .parseLines(clientsFileName, parseClientBalance)(_.toMap)
   }
 
   private def indexToAssetId(index: Int): AssetId = {

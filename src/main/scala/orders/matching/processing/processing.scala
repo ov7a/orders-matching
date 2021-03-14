@@ -5,4 +5,5 @@ package object processing {
   type AssetId = String
   type Orders = Map[AssetId, List[Order]]
   type Balances = Map[ClientId, BalanceState]
+  type Currency = Int
 }
