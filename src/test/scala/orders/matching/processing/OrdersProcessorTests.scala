@@ -16,14 +16,14 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
   "exact matching" should "be done correctly" in {
     val orders = Map(
-      "A" -> List(buyOrder)
+      "A" -> Vector(buyOrder)
     )
 
     val newState = OrdersProcessor.process(State(balances, orders), sellOrder)
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List.empty),
+        activeOrders = Map("A" -> Vector.empty),
         balances = Map(
           "C1" -> BalanceState(130, Map("A" -> 0, "B" -> 15)),
           "C2" -> BalanceState(70, Map("A" -> 10))
@@ -34,14 +34,14 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
   "exact match with existing" should "be skipped in case of price mismatch" in {
     val orders = Map(
-      "A" -> List(buyOrder)
+      "A" -> Vector(buyOrder)
     )
     val newOrder = sellOrder.copy(price = 4)
     val newState = OrdersProcessor.process(State(balances, orders), newOrder)
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(buyOrder, newOrder)),
+        activeOrders = Map("A" -> Vector(buyOrder, newOrder)),
         balances = balances
       )
     )
@@ -49,13 +49,13 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
   "exact matching with different prices" should "be done correctly" in {
     val orders = Map(
-      "A" -> List(buyOrder.copy(price = 4))
+      "A" -> Vector(buyOrder.copy(price = 4))
     )
     val newState = OrdersProcessor.process(State(balances, orders), sellOrder)
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List.empty),
+        activeOrders = Map("A" -> Vector.empty),
         balances = Map(
           "C1" -> BalanceState(130, Map("A" -> 0, "B" -> 15)),
           "C2" -> BalanceState(70, Map("A" -> 10))
@@ -66,14 +66,14 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
   "partial matching with partial match of new order" should "be done correctly" in {
     val orders = Map(
-      "A" -> List(buyOrder)
+      "A" -> Vector(buyOrder)
     )
     val newOrder = sellOrder.copy(amount = 3)
     val newState = OrdersProcessor.process(State(balances, orders), newOrder)
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(buyOrder.copy(amount = 7))),
+        activeOrders = Map("A" -> Vector(buyOrder.copy(amount = 7))),
         balances = Map(
           "C1" -> BalanceState(109, Map("A" -> 7, "B" -> 15)),
           "C2" -> BalanceState(91, Map("A" -> 3))
@@ -86,13 +86,13 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
     val existingOrder = sellOrder.copy(amount = 3)
 
     val orders = Map(
-      "A" -> List(existingOrder)
+      "A" -> Vector(existingOrder)
     )
     val newState = OrdersProcessor.process(State(balances, orders), buyOrder)
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(buyOrder.copy(amount = 7))),
+        activeOrders = Map("A" -> Vector(buyOrder.copy(amount = 7))),
         balances = Map(
           "C1" -> BalanceState(109, Map("A" -> 7, "B" -> 15)),
           "C2" -> BalanceState(91, Map("A" -> 3))
@@ -105,13 +105,13 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
     val existingOrder = sellOrder.copy(amount = 3, price = 4)
 
     val orders = Map(
-      "A" -> List(existingOrder)
+      "A" -> Vector(existingOrder)
     )
     val newState = OrdersProcessor.process(State(balances, orders), buyOrder)
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(existingOrder, buyOrder)),
+        activeOrders = Map("A" -> Vector(existingOrder, buyOrder)),
         balances = balances
       )
     )
@@ -121,7 +121,7 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
     val orderToSkip = sellOrder.copy(price = 100)
 
     val orders = Map(
-      "A" -> List(
+      "A" -> Vector(
         orderToSkip,
         sellOrder,
         orderToSkip
@@ -131,7 +131,7 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(orderToSkip, orderToSkip)),
+        activeOrders = Map("A" -> Vector(orderToSkip, orderToSkip)),
         balances = Map(
           "C1" -> BalanceState(130, Map("A" -> 0, "B" -> 15)),
           "C2" -> BalanceState(70, Map("A" -> 10))
@@ -142,7 +142,7 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
   "orders from the same client" should "not be matched" in {
     val orders = Map(
-      "A" -> List(sellOrder)
+      "A" -> Vector(sellOrder)
     )
 
     val newOrder = buyOrder.copy(clientId = sellOrder.clientId)
@@ -150,7 +150,7 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(sellOrder, newOrder)),
+        activeOrders = Map("A" -> Vector(sellOrder, newOrder)),
         balances = balances
       )
     )
@@ -161,7 +161,7 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
     val hugeBuyOrder2 = buyOrder.copy(amount = 200, price = buyOrder.price + 1)
 
     val orders = Map(
-      "A" -> List(
+      "A" -> Vector(
         hugeBuyOrder,
         buyOrder,
         hugeBuyOrder2
@@ -172,7 +172,7 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(hugeBuyOrder2)),
+        activeOrders = Map("A" -> Vector(hugeBuyOrder2)),
         balances = Map(
           "C1" -> BalanceState(130, Map("A" -> 0, "B" -> 15)),
           "C2" -> BalanceState(70, Map("A" -> 10))
@@ -186,14 +186,14 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
     val hugeBuyOrder2 = buyOrder.copy(amount = 200, price = buyOrder.price + 1)
 
     val orders = Map(
-      "A" -> List(hugeBuyOrder, hugeBuyOrder, buyOrder, hugeBuyOrder2, hugeBuyOrder2)
+      "A" -> Vector(hugeBuyOrder, hugeBuyOrder, buyOrder, hugeBuyOrder2, hugeBuyOrder2)
     )
     val newOrder = sellOrder.copy(price = 4)
     val newState = OrdersProcessor.process(State(balances, orders), newOrder)
 
     newState shouldBe Success(
       State(
-        activeOrders = Map("A" -> List(buyOrder, newOrder)),
+        activeOrders = Map("A" -> Vector(buyOrder, newOrder)),
         balances = balances
       )
     )
@@ -211,7 +211,7 @@ class OrdersProcessorTests extends AnyFlatSpec with Matchers {
 
     newState shouldBe
       State(
-        activeOrders = Map("A" -> List.empty),
+        activeOrders = Map("A" -> Vector.empty),
         balances = Map(
           "C1" -> BalanceState(130, Map("A" -> 0, "B" -> 15)),
           "C2" -> BalanceState(70, Map("A" -> 10))

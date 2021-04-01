@@ -16,10 +16,10 @@ object OrdersProcessor {
       InvalidOrder
     } else {
       val assetId = newOrder.assetId
-      state.activeOrders.getOrElse(assetId, Nil) match {
-        case Nil =>
+      state.activeOrders.getOrElse(assetId, Vector.empty) match {
+        case Vector() =>
           val newState = state.copy(
-            activeOrders = state.activeOrders.updated(assetId, List(newOrder))
+            activeOrders = state.activeOrders.updated(assetId, Vector(newOrder))
           )
           Success(newState)
 
@@ -35,18 +35,18 @@ object OrdersProcessor {
   }
 
   @tailrec private def matchOrderList(
-    currentList: List[Order],
+    currentList: Vector[Order],
     order: Order,
     balances: Balances,
-    updatedList: List[Order] = Nil
-  ): (List[Order], Balances) = currentList match {
+    updatedList: Vector[Order] = Vector.empty
+  ): (Vector[Order], Balances) = currentList match {
 
-    case Nil => (updatedList :+ order, balances)
+    case Vector() => (updatedList :+ order, balances)
 
-    case currentOrder :: tail if !validate(currentOrder, balances) =>
+    case currentOrder +: tail if !validate(currentOrder, balances) =>
       matchOrderList(tail, order, balances, updatedList)
 
-    case currentOrder :: tail =>
+    case currentOrder +: tail =>
       matchOrders(currentOrder, order) match {
         case FullMatch(price) =>
           val updatedBalances = updateBalances(
