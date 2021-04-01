@@ -4,7 +4,7 @@ import orders.matching.processing.{BuyOrderType, Order, SellOrderType}
 
 object OrdersParser {
   def parseOrder(line: String): Option[Order] = {
-    val parts = line.split("\t")
+    val parts = line.split(Parser.separator)
     val clientId = parts(0)
     val orderTypeRaw = parts(1)
     val orderType = orderTypeRaw match {
@@ -25,8 +25,8 @@ object OrdersParser {
     ))
   }
 
-  def parse[R](ordersFileName: String): (Iterator[Order] => R) => R = {
+  def parse[R](inputId: String): (Iterator[Order] => R) => R = {
     Parser
-      .parseLines(ordersFileName, parseOrder)
+      .parseLines(inputId, parseOrder)
   }
 }

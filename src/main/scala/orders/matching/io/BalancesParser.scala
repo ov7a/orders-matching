@@ -4,7 +4,7 @@ import orders.matching.processing._
 
 object BalancesParser {
   def parseClientBalance(line: String): Option[(ClientId, BalanceState)] = {
-    val parts = line.split("\t")
+    val parts = line.split(Parser.separator)
 
     val clientId = parts(0)
 
@@ -20,9 +20,9 @@ object BalancesParser {
     Some(clientId, BalanceState(balance, assets))
   }
 
-  def parse(clientsFileName: String): Balances = {
+  def parse(inputId: String): Balances = {
     Parser
-      .parseLines(clientsFileName, parseClientBalance)(_.toMap)
+      .parseLines(inputId, parseClientBalance)(_.toMap)
   }
 
   private def indexToAssetId(index: Int): AssetId = {

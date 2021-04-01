@@ -1,17 +1,24 @@
 package orders.matching.io
 
-import java.io.{BufferedReader, FileReader}
+import java.io.{BufferedReader, StringReader}
+
+import org.scalajs.dom.document
+import org.scalajs.dom.html.TextArea
 
 import scala.util.Using
 
-object Parser { //TODO: error handling
+object Parser {
+  val separator = "\\s+"
+
   def parseLines[T, R](
-    fileName: String,
+    textAreaId: String,
     parse: String => Option[T]
   )(
     process: Iterator[T] => R
   ): R = {
-    Using.resource(new BufferedReader(new FileReader(fileName))) { reader => //TODO: iterator out of scope
+    val text = document.getElementById(textAreaId).asInstanceOf[TextArea].value
+
+    Using.resource(new BufferedReader(new StringReader(text))) { reader =>
       process(
         Iterator.continually(reader.readLine())
                 .takeWhile(_ != null)
